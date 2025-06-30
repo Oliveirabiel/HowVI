@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Estilos CSS */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    input[name="class"],
+    select {
+      width: 46%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    
+    button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+    
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <di class="container">
+    <h1>Cadastro de Alunos</h1>
+    <form id="studentForm">
+      <h2 id="idAluno"></h2>
+      <input type="text" name="name" placeholder="Nome" id="nome" required>
+      <input type="email" name="email" placeholder="E-mail"id="email"  required>
+      <input type="number" name="idade" placeholder="Idade" id="idade" required>
+      <select name="class" id="class" required>
+        <option value="">Selecione uma turma</option>
+        <option value="A">Turma A</option>
+        <option value="B">Turma B</option>
+        <option value="C">Turma C</option>
+      </select>
+      <div></div>
+      <button type="submit">Cadastrar</button>
+    </form>
+    <div class="message" id="message"></div>
+
+    <h2>Alunos Cadastrados</h2>
+    <input type="text" id="searchInput" placeholder="Buscar aluno">
+    <button type="submit" id="btnPesquisar">Pesquisar</button>
+    <div id="studentsList"></div>
+  </div>
+  <script type="module">
+
+  // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAy5EV-bxUgt5HM-Dr7B88XcGArNJwTOog",
+    authDomain: "howdbcadaluno.firebaseapp.com",
+    projectId: "howdbcadaluno",
+    storageBucket: "howdbcadaluno.appspot.com",
+    messagingSenderId: "613886022290",
+    appId: "1:613886022290:web:5309bfecda13ac60584c4b",
+    measurementId: "G-D1D6B5LPPY"
+  };
+
+    // Inicializar o Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const firestore = getFirestore(app);
+    //COnsultar tabela de Grade
+    // getDocs(collection(firestore, 'gradePorTurma'));
+    // const grade = query(collection(firestore, "gradePorTurma"));
+    // getDocs(grade)
+    //     .then((querySnapshot) => {
+    //       querySnapshot.forEach((doc) => {
+    //         const grade = doc.data();
+    //           console.log(grade);
+    //       });
+    //     });
+    // cadastrar no BD
+    // Capturar o formulário
+    const form = document.getElementById('studentForm');
+    const searchInput = document.getElementById('searchInput');
+    // Definir o evento de clique do botão de pesquisa
+    document.getElementById('btnPesquisar').addEventListener('click', function(event) {
+    event.preventDefault(); // Impede o envio do formulário
+
+    const searchTerm = searchInput.value.trim();
+
+    if (searchTerm !== '') {
+      // Criar uma consulta para buscar alunos com base no termo de pesquisa
+      const q = query(collection(firestore, 'cadAlunos'), where('nome', '==', searchTerm));
+      // Realizar a consulta
+      getDocs(q)
+        .then((querySnapshot) => {
+          // Limpar a lista de alunos antes de exibir os resultados da pesquisa
+          studentsList.innerHTML = '';
+
+          // Exibir os resultados da pesquisa
+          querySnapshot.forEach((doc) => {
+            const aluno = doc.data();
+            const turmaId = query(collection(firestore, 'gradePorTurma'), where('id', '==', aluno.turma));
+            getDocs(turmaId)
+              .then((querySnapshot) => {
+            querySnapshot.forEach((turma) => {
+            const grade = turma.data();
+              console.log(grade);
+              console.log(aluno);
+              const turmaId= document.createElement('div','p');
+              turmaId.textContent = `Disciplinas: ${grade.Disciplina1} e ${grade.Disciplina2}`;
+              studentsList.appendChild(turmaId);
+              });
+            });
+            const alunoItem = document.createElement('p');
+            alunoItem.textContent = `Nome: ${aluno.nome}, Idade: ${aluno.idade}, E-mail: ${aluno.email}, Turma: ${aluno.turma}`;
+            studentsList.appendChild(alunoItem);
+          });
+        })
+        .catch((error) => {
+              console.log('Erro ao realizar a consulta:', error);
+        });
+    } else {
+      // Se o campo de pesquisa estiver vazio, exibir todos os alunos cadastrados
+      getDocs(collection(firestore, 'cadAlunos'))
+        .then((querySnapshot) => {
+          // Limpar a lista de alunos antes de exibir todos os resultados
+          studentsList.innerHTML = '';
+
+          // Exibir todos os alunos cadastrados
+          querySnapshot.forEach((doc) => {
+            const aluno = doc.data();
+            const alunoItem = document.createElement('p');
+            alunoItem.textContent = `Nome: ${aluno.nome}, Idade: ${aluno.idade}, E-mail: ${aluno.email}, Turma: ${aluno.turma}`;
+            studentsList.appendChild(alunoItem);
+            console.log(alunoItem)
+          });
+        })
+        .catch((error) => {
+          console.log('Erro ao realizar a consulta:', error);
+        });
+    }
+  });
+    // Definir o evento de envio do formulário
+    form.addEventListener('submit', function(event) {
+    event.preventDefault(); // Impede o envio do formulário
+
+    // Capturar os valores inseridos nos campos de input
+    const nome = document.getElementById('nome').value;
+    const idade = document.getElementById('idade').value;
+    const email = document.getElementById('email').value;
+    const turma = document.getElementById('class').value;
+    // Atualizar o objeto dados com os valores inseridos
+    const dados = {
+      nome: nome,
+      idade: idade,
+      email: email,
+      turma: turma
+    };
+    // Inserir os dados no Firestore
+    addDoc(collection(firestore, 'cadAlunos'), dados)
+      .then((docRef) => {
+        console.log('Dados inseridos com sucesso! ID do documento:', docRef.id);
+        form.reset(); // Limpar o formulário após o envio
+      })
+      .catch((error) => {
+        console.log('Erro ao inserir dados:', error);
+      });
+    });
+    
+    // Definindo os dados a serem inseridos
+    // const dados = {
+    // nome: 'Exemplo',
+    // idade: 25,
+    // email: 'exemplo@example.com',
+    // turma: 'A'
+    // };
+
+    // Inserindo os dados no Firestore
+    // addDoc(collection(firestore, 'cadAlunos'), dados)
+    //   .then((docRef) => {
+    //     console.log('Dados inseridos com sucesso! ID do documento:', docRef.id);
+    //   })
+    //   .catch((error) => {
+    //     console.log('Erro ao inserir dados:', error);
+    //   });
+
+  </script>
+</body>
+</html>
